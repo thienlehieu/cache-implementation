@@ -1,0 +1,127 @@
+12
+20
+20
+30
+Print replacement buffer
+0 25 false
+1 24 true
+3 20 false
+11 24 true
+9 22 false
+2 24 true
+4 20 true
+10 30 false
+5 40 false
+7 30 false
+8 12 false
+6 42 false
+Print search buffer
+Print AVL in inorder:
+0 25 false
+1 24 true
+2 24 true
+3 20 false
+4 20 true
+5 40 false
+6 42 false
+7 30 false
+8 12 false
+9 22 false
+10 30 false
+11 24 true
+Print AVL in preorder:
+5 40 false
+3 20 false
+1 24 true
+0 25 false
+2 24 true
+4 20 true
+9 22 false
+7 30 false
+6 42 false
+8 12 false
+11 24 true
+10 30 false
+
+class ASTGeneration(MPVisitor):
+
+    def visitProgram(self,ctx:MPParser.ProgramContext):
+        vardecls = self.visit(ctx.vardecls()) #return a list of vardecl
+        return Program(vardecls)
+
+    def visitVardecls(self,ctx:MPParser.VardeclsContext):
+        #return a list of vardecl
+        return self.visit(ctx.vardecl()) + self.visit(ctx.vardecltail())
+
+    def visitVardecltail(self,ctx:MPParser.VardecltailContext): 
+        if ctx.getChildCount() == 2
+            vardecl = self.visit(ctx.vardecl()) #[VarDecl, VarDecl]
+            vardecltail = self.visit(ctx.vardecltail()) #[VarDecl, VarDecl]
+            return vardecl + vardecltail
+        return []
+
+    def visitVardecl(self,ctx:MPParser.VardeclContext): 
+        typ = self.vist(ctx.mptype()) #IntType()
+        ids = self.visit(ctx.ids()) #[Id(a), Id(b)]
+        return [VarDecl(x, typ) for x in ids]
+
+    def visitMptype(self,ctx:MPParser.MptypeContext):
+        if ctx.INTTYPE():
+            return IntType()
+        return FloatType()
+
+    def visitIds(self,ctx:MPParser.IdsContext):
+        if(ctx.getChildCount() == 1):
+            return [Id(ctx.ID().getText())]
+        #int a, b, c
+        ids = self.visit(ctx.ids()) #[ID(b), ID(c)]
+        return [Id(ctx.ID().getText())] + ids
+
+
+class ASTGeneration(MPVisitor):
+
+    def visitProgram(self,ctx:MPParser.ProgramContext):
+        return self.visit(ctx.exp())
+
+    def visitExp(self,ctx:MPParser.ExpContext):
+        if ctx.getChildCount() == 3:
+            opr = ctx.ASSIGN().getText()
+            op1 = ctx.term()
+            op2 = ctx.exp()
+            result = []
+            for i in range(0, len(opr)):
+                result += [Binary(opr[i], op1[i], op2[i])]
+            return result
+        return self.visit(ctx.factor())
+
+    def visitTerm(self,ctx:MPParser.TermContext): 
+        if ctx.getChildCount() == 3:
+            opr = ctx.COMPARE().getText()
+            op1 = ctx.factor(0)
+            op2 = ctx.factor(1)
+            result = []
+            for i in range(0, len(opr)):
+                result += [Binary(opr[i], op1[i], op2[i])]
+            return result
+        return self.visit(ctx.factor())
+
+    def visitFactor(self,ctx:MPParser.FactorContext):
+        if ctx.getChildCount() == 3:
+            opr = ctx.ANDOR().getText()
+            op1 = ctx.factor()
+            op2 = ctx.oprerand()
+            result = []
+            for i in range(0, len(opr)):
+                result += [Binary(opr[i], op1[i], op2[i])]
+            return result
+        return self.visit(ctx.oprerand())
+
+    def visitOperand(self,ctx:MPParser.OperandContext):
+        if ctx.ID():
+            return Id(ctx.ID().getText())
+        elif ctx.INTLIT():
+            return IntLiteral(ctx.INTLIT())
+        elif ctx.BOOLIT:
+            return BooleanLiteral(ctx.BOOLIT())
+        else:
+            return self.visit(ctx.exp())
